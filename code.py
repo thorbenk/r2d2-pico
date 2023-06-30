@@ -6,13 +6,16 @@ import random
 import audiocore
 import board
 import audiobusio
+import audiomixer
 import time
 
 def play_character(char):
     wave_file = open(char + ".wav", "rb")
     wav = audiocore.WaveFile(wave_file)
-    audio.play(wav)
-    while audio.playing:
+    #audio.play(wav)
+    mixer.voice[0].play(wav)
+    #while audio.playing:
+    while mixer.voice[0].playing:
         pass
 
 class TTAstromech(object):
@@ -47,6 +50,12 @@ class TTAstromech(object):
         return s
 
 audio = audiobusio.I2SOut(board.GP0, board.GP1, board.GP2)
+
+mixer = audiomixer.Mixer(voice_count=1, sample_rate=22050, channel_count=1,
+                         bits_per_sample=16, samples_signed=True)
+audio.play(mixer) # attach mixer to audio playback
+
+mixer.voice[0].level = 0.2
 
 tt = TTAstromech()
 while(True):
