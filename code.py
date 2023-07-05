@@ -8,6 +8,7 @@ import board
 import audiobusio
 import audiomixer
 import time
+import neopixel
 
 def play_character(char):
     wave_file = open(char + ".wav", "rb")
@@ -57,11 +58,24 @@ audio.play(mixer) # attach mixer to audio playback
 
 mixer.voice[0].level = 0.2
 
+
+# Update this to match the number of NeoPixel LEDs connected to your board.
+num_pixels = 5
+pixels = neopixel.NeoPixel(board.GP10, num_pixels, pixel_order=neopixel.GRBW)
+pixels.brightness = 0.1
+
 tt = TTAstromech()
+pixels.fill((255, 0, 0))
+i = 0
 while(True):
     x = tt.getnrandom(8)
     tt.play(x)
+    if i % 2 == 0:
+        pixels.fill((0, 0, 255))
+    else:
+        pixels.fill((255, 0, 0))
     time.sleep(2)
+    i += 1
 
 
 
