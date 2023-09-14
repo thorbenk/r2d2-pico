@@ -33,6 +33,8 @@ Q_SOUNDS = [
 
 PLAY_Q_EVERY_SEC = 5
 
+PLAY_ABC_EVERY_SEC = 5
+
 class PlayQ:
     def __init__(self):
         self.last_played = 0
@@ -68,8 +70,8 @@ def play_character(char):
     #audio.play(wav)
     mixer.voice[0].play(wav)
     #while audio.playing:
-    while mixer.voice[0].playing:
-        pass
+    #while mixer.voice[0].playing:
+    #    pass
 
 class TTAstromech(object):
     def __init__(self):
@@ -78,28 +80,54 @@ class TTAstromech(object):
             "l", "m", "n", "o", "o1", "p", "q", "r", "s", "s1", "t", "u", "u1",
             "v", "w", "x", "y", "z"
         ]
+        self.playing_word = False
+        self.last_played = 0
 
-    def play(self, word):
-        data = b""
+        self.current_word = None
+        self.current_char = 0
 
-        for letter in word:
-            letter = letter.lower()  # need this?
-            if not letter.isalpha():
-                continue
+    def update(self):
+        global config_play_audio
 
-            play_character(letter)
-        return data
+        if not config_play_audio:
+            return
 
-    def run(self):
-        while True:
-            word = self.getnrandom()
-            self.speak(word)
+        if mixer.voice[0].playing:
+            return
+        else:
+            # currently not playing
+
+            # Reason 1: Stopped in the middle of speaking a word. Speak next letter
+            if self.playing_word and self.current_char < len(self.current_word) - 1:
+                # still some letters to go
+                self.current_char += 1
+
+            # Reason 2: Stopped at the end of the word
+            elif self.playing_word:
+                # done with this word
+                self.playing_word = False
+                self.current_char = 0
+                self.current_word = None
+                self.last_played = time.time()
+                return
+
+            # Reason 3: Currently waiting.
+            else:
+                pass
+
+        if not self.playing_word and (time.time() - self.last_played > PLAY_ABC_EVERY_SEC):
+            self.playing_word = True
+            self.current_char = 0
+            self.current_word = self.getnrandom()
+
+        if self.playing_word:
+            play_character(self.current_word[self.current_char])
 
     def getnrandom(self, n=6):
-        s = ""
+        s = []
         for i in range(n):
             i = random.randint(0, len(self.letters)-1)
-            s += self.letters[i]
+            s.append(self.letters[i])
         return s
 
 button_pin = digitalio.DigitalInOut(board.GP22)
@@ -128,7 +156,8 @@ i = 0
 
 last_update = time.time()
 
-q_sounds = PlayQ()
+#q_sounds = PlayQ()
+abc_sounds = TTAstromech()
 
 while(True):
     button.update()
@@ -140,7 +169,8 @@ while(True):
         print("button released")
     #time.sleep(0.01)
 
-    q_sounds.update()
+    #q_sounds.update()
+    abc_sounds.update()
 
     if time.time() - last_update < 2:
         continue
