@@ -11,60 +11,12 @@ import time
 import neopixel
 from adafruit_debouncer import Debouncer
 import digitalio
-import audiomp3
 
 config_play_audio = False
 
-Q_SOUNDS = [
-    "QSCANING.mp3",
-    "QSNTNC10.mp3",
-    "QSNTNC13.mp3",
-    "QSNTNC16.mp3",
-    "QSNTNC18.mp3",
-    "QSNTNC20.mp3",
-    "QSNTNC4.mp3",
-    "QWORD16.mp3",
-    "QWORD1.mp3",
-    "QWORD22.mp3",
-    "QWORD4.mp3",
-    "QWORD8.mp3",
-    "QWORD9.mp3"
-]
-
-PLAY_Q_EVERY_SEC = 5
-
-class PlayQ:
-    def __init__(self):
-        self.last_played = 0
-        self.playing = False
-
-    def update(self):
-        global config_play_audio
-
-        if not config_play_audio:
-            return
-
-        if mixer.voice[0].playing:
-            return
-        elif self.playing:
-            self.playing = False
-            self.last_played = time.time()
-
-        if time.time() - self.last_played > PLAY_Q_EVERY_SEC:
-            self.playing = True
-            r = random.randint(0, len(Q_SOUNDS)-1)
-            rnd_sound = Q_SOUNDS[r]
-            print(rnd_sound)
-            f = open(rnd_sound, "rb")
-            snd = audiomp3.MP3Decoder(f)
-            #audio.play(wav)
-            mixer.voice[0].play(snd)
-
-
-
 def play_character(char):
-    wave_file = open(char + ".mp3", "rb")
-    wav = audiomp3.MP3Decoder(wave_file)
+    wave_file = open(char + ".wav", "rb")
+    wav = audiocore.WaveFile(wave_file)
     #audio.play(wav)
     mixer.voice[0].play(wav)
     #while audio.playing:
@@ -114,7 +66,7 @@ mixer = audiomixer.Mixer(voice_count=1, sample_rate=22050, channel_count=1,
                          bits_per_sample=16, samples_signed=True)
 audio.play(mixer) # attach mixer to audio playback
 
-mixer.voice[0].level = 0.8
+mixer.voice[0].level = 0.2
 
 
 # Update this to match the number of NeoPixel LEDs connected to your board.
@@ -128,8 +80,6 @@ i = 0
 
 last_update = time.time()
 
-q_sounds = PlayQ()
-
 while(True):
     button.update()
     if button.fell:
@@ -138,16 +88,13 @@ while(True):
         print("audio", config_play_audio)
     elif button.rose:
         print("button released")
-    #time.sleep(0.01)
-
-    q_sounds.update()
-
+    time.sleep(0.01)
     if time.time() - last_update < 2:
         continue
     else:
-        # x = tt.getnrandom(8)
-        #if config_play_audio:
-        #    tt.play(x)
+        x = tt.getnrandom(8)
+        if config_play_audio:
+            tt.play(x)
         if i % 2 == 0:
             for j in range(7):
                 pixels[j] = (0, 0, 255)
@@ -160,11 +107,7 @@ while(True):
             pixels[7] = (128,128,0)
         last_update = time.time()
     # time.sleep(2)
-
     i += 1
-    if i >= 2:
-        i = 0
-
 
 
 
