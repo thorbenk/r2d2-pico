@@ -14,6 +14,7 @@ import digitalio
 import audiomp3
 
 config_play_audio = False
+config_sound_mode = 0
 
 Q_SOUNDS = [
     "QSCANING.mp3",
@@ -156,29 +157,21 @@ i = 0
 
 last_update = time.time()
 
-#q_sounds = PlayQ()
+q_sounds = PlayQ()
 abc_sounds = TTAstromech()
 
-while(True):
-    button.update()
-    if button.fell:
-        print("button pressed")
-        config_play_audio = not config_play_audio
-        print("audio", config_play_audio)
-    elif button.rose:
-        print("button released")
-    #time.sleep(0.01)
+class Blinky:
+    def __init__(self):
+        self.last_update = 0
+        self.step = 0
 
-    #q_sounds.update()
-    abc_sounds.update()
+    def update(self):
+        global pixels
 
-    if time.time() - last_update < 2:
-        continue
-    else:
-        # x = tt.getnrandom(8)
-        #if config_play_audio:
-        #    tt.play(x)
-        if i % 2 == 0:
+        if time.time() - self.last_update < 1:
+            return
+
+        if self.step % 2 == 0:
             for j in range(7):
                 pixels[j] = (0, 0, 255)
             pixels[7] = (0,128,128)
@@ -188,13 +181,38 @@ while(True):
                 pixels[j] = (255, 0, 0)
             pixels[8] = (0,128,128)
             pixels[7] = (128,128,0)
-        last_update = time.time()
-    # time.sleep(2)
+        self.step += 1
+        if self.step >= 2:
+            self.step = 0
 
-    i += 1
-    if i >= 2:
-        i = 0
+        self.last_update = time.time()
 
+blinky = Blinky()
+
+while(True):
+    button.update()
+    if button.fell:
+        if config_sound_mode == 0:
+            config_sound_mode = 1
+            config_play_audio = True
+        elif config_sound_mode == 1:
+            config_sound_mode = 2
+            config_play_audio = True
+        else:
+            config_sound_mode = 0
+            config_play_audio = False
+
+        print("audio", config_play_audio, "mode", config_sound_mode)
+    elif button.rose:
+        pass
+    #time.sleep(0.01)
+
+    if config_sound_mode == 1:
+        q_sounds.update()
+    elif config_sound_mode == 2:
+        abc_sounds.update()
+
+    blinky.update()
 
 
 
