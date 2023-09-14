@@ -51,9 +51,9 @@ class PlayQ:
             return
         elif self.playing:
             self.playing = False
-            self.last_played = time.time()
+            self.last_played = time.monotonic()
 
-        if time.time() - self.last_played > PLAY_Q_EVERY_SEC:
+        if time.monotonic() - self.last_played > PLAY_Q_EVERY_SEC:
             self.playing = True
             r = random.randint(0, len(Q_SOUNDS)-1)
             rnd_sound = Q_SOUNDS[r]
@@ -109,14 +109,14 @@ class TTAstromech(object):
                 self.playing_word = False
                 self.current_char = 0
                 self.current_word = None
-                self.last_played = time.time()
+                self.last_played = time.monotonic()
                 return
 
             # Reason 3: Currently waiting.
             else:
                 pass
 
-        if not self.playing_word and (time.time() - self.last_played > PLAY_ABC_EVERY_SEC):
+        if not self.playing_word and (time.monotonic() - self.last_played > PLAY_ABC_EVERY_SEC):
             self.playing_word = True
             self.current_char = 0
             self.current_word = self.getnrandom()
@@ -151,41 +151,92 @@ num_pixels = 9
 pixels = neopixel.NeoPixel(board.GP10, num_pixels, pixel_order=neopixel.GRB)
 pixels.brightness = 0.5
 
-tt = TTAstromech()
-pixels.fill((255, 0, 0))
-i = 0
+pixels.fill((0, 0, 0))
 
-last_update = time.time()
+last_update = time.monotonic()
 
 q_sounds = PlayQ()
 abc_sounds = TTAstromech()
+
+#
+#   3 2 1
+#     0
+#   4 5 6
+#
 
 class Blinky:
     def __init__(self):
         self.last_update = 0
         self.step = 0
+        self.state = 0
+        self.from_color = (255,0,0)
+        self.to_color = (0,0,255)
+
+        self.col_disp_a = (128,0, 128)
+        self.col_disp_b = (128,128,0)
 
     def update(self):
         global pixels
 
-        if time.time() - self.last_update < 1:
-            return
+        if self.state == 0:
+            wait_time = random.uniform(3, 8)
+            if time.monotonic() - self.last_update < wait_time:
+                return
+            else:
+                self.state = 1
+        elif self.state > 0:
+            trans_time = random.uniform(0.02, 0.05)
+            if time.monotonic() - self.last_update < trans_time:
+                return
+            else:
+                self.state += 1
 
-        if self.step % 2 == 0:
-            for j in range(7):
-                pixels[j] = (0, 0, 255)
-            pixels[7] = (0,128,128)
-            pixels[8] = (128,128,0)
-        else:
-            for j in range(7):
-                pixels[j] = (255, 0, 0)
-            pixels[8] = (0,128,128)
-            pixels[7] = (128,128,0)
-        self.step += 1
-        if self.step >= 2:
-            self.step = 0
+        pixels[7] = self.col_disp_a
+        pixels[8] = self.col_disp_b
 
-        self.last_update = time.time()
+        if self.state == 0:
+            for i in range(7):
+                pixels[i] = self.from_color
+
+        elif self.state == 1:
+            pixels[1] = self.to_color
+            pixels[2] = self.to_color
+            pixels[3] = self.to_color
+
+            pixels[0] = self.from_color
+
+            pixels[4] = self.from_color
+            pixels[5] = self.from_color
+            pixels[6] = self.from_color
+
+        elif self.state == 2:
+            pixels[1] = self.to_color
+            pixels[2] = self.to_color
+            pixels[3] = self.to_color
+
+            pixels[0] = self.to_color
+
+            pixels[4] = self.from_color
+            pixels[5] = self.from_color
+            pixels[6] = self.from_color
+
+        elif self.state == 3:
+            pixels[1] = self.to_color
+            pixels[2] = self.to_color
+            pixels[3] = self.to_color
+
+            pixels[0] = self.to_color
+
+            pixels[4] = self.to_color
+            pixels[5] = self.to_color
+            pixels[6] = self.to_color
+
+            self.state = 0
+            self.from_color, self.to_color = self.to_color, self.from_color
+            self.col_disp_a, self.col_disp_b = self.col_disp_b, self.col_disp_a
+
+        pixels.show()
+        self.last_update = time.monotonic()
 
 blinky = Blinky()
 
@@ -213,6 +264,7 @@ while(True):
         abc_sounds.update()
 
     blinky.update()
+    time.sleep(0.002)
 
 
 
