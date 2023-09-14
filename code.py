@@ -32,9 +32,9 @@ Q_SOUNDS = [
     "QWORD9.mp3"
 ]
 
-PLAY_Q_EVERY_SEC = 5
+PLAY_Q_EVERY_SEC = [5, 10]
 
-PLAY_ABC_EVERY_SEC = 5
+PLAY_ABC_EVERY_SEC = [5, 10]
 
 class PlayQ:
     def __init__(self):
@@ -53,7 +53,7 @@ class PlayQ:
             self.playing = False
             self.last_played = time.monotonic()
 
-        if time.monotonic() - self.last_played > PLAY_Q_EVERY_SEC:
+        if time.monotonic() - self.last_played > random.uniform(*PLAY_Q_EVERY_SEC):
             self.playing = True
             r = random.randint(0, len(Q_SOUNDS)-1)
             rnd_sound = Q_SOUNDS[r]
@@ -116,7 +116,7 @@ class TTAstromech(object):
             else:
                 pass
 
-        if not self.playing_word and (time.monotonic() - self.last_played > PLAY_ABC_EVERY_SEC):
+        if not self.playing_word and (time.monotonic() - self.last_played > random.uniform(*PLAY_ABC_EVERY_SEC)):
             self.playing_word = True
             self.current_char = 0
             self.current_word = self.getnrandom()
@@ -166,7 +166,8 @@ abc_sounds = TTAstromech()
 
 class Blinky:
     def __init__(self):
-        self.last_update = 0
+        self.last_state_change = 0
+        self.last_blink = 0
         self.step = 0
         self.state = 0
         self.from_color = (255,0,0)
@@ -178,65 +179,74 @@ class Blinky:
     def update(self):
         global pixels
 
+        new_state = self.state
         if self.state == 0:
             wait_time = random.uniform(3, 8)
-            if time.monotonic() - self.last_update < wait_time:
-                return
-            else:
-                self.state = 1
+            if time.monotonic() - self.last_state_change >= wait_time:
+                new_state = 1
         elif self.state > 0:
             trans_time = random.uniform(0.02, 0.05)
-            if time.monotonic() - self.last_update < trans_time:
-                return
-            else:
-                self.state += 1
+            if time.monotonic() - self.last_state_change >= trans_time:
+                new_state = self.state + 1
+                if new_state > 3:
+                    new_state = 0
 
-        pixels[7] = self.col_disp_a
-        pixels[8] = self.col_disp_b
+        need_update = False
 
-        if self.state == 0:
-            for i in range(7):
-                pixels[i] = self.from_color
-
-        elif self.state == 1:
-            pixels[1] = self.to_color
-            pixels[2] = self.to_color
-            pixels[3] = self.to_color
-
-            pixels[0] = self.from_color
-
-            pixels[4] = self.from_color
-            pixels[5] = self.from_color
-            pixels[6] = self.from_color
-
-        elif self.state == 2:
-            pixels[1] = self.to_color
-            pixels[2] = self.to_color
-            pixels[3] = self.to_color
-
-            pixels[0] = self.to_color
-
-            pixels[4] = self.from_color
-            pixels[5] = self.from_color
-            pixels[6] = self.from_color
-
-        elif self.state == 3:
-            pixels[1] = self.to_color
-            pixels[2] = self.to_color
-            pixels[3] = self.to_color
-
-            pixels[0] = self.to_color
-
-            pixels[4] = self.to_color
-            pixels[5] = self.to_color
-            pixels[6] = self.to_color
-
-            self.state = 0
-            self.from_color, self.to_color = self.to_color, self.from_color
+        blink_time = random.uniform(5, 20)
+        if time.monotonic() - self.last_blink >= blink_time:
             self.col_disp_a, self.col_disp_b = self.col_disp_b, self.col_disp_a
+            pixels[7] = self.col_disp_a
+            pixels[8] = self.col_disp_b
+            self.last_blink = time.monotonic()
+            need_update = True
 
-        pixels.show()
-        self.last_update = time.monotonic()
+        if new_state != self.state:
+            self.state = new_state
+            self.last_state_change = time.monotonic()
+            need_update = True
+
+            if self.state == 0:
+                for i in range(7):
+                    pixels[i] = self.from_color
+
+            elif self.state == 1:
+                pixels[1] = self.to_color
+                pixels[2] = self.to_color
+                pixels[3] = self.to_color
+
+                pixels[0] = self.from_color
+
+                pixels[4] = self.from_color
+                pixels[5] = self.from_color
+                pixels[6] = self.from_color
+
+            elif self.state == 2:
+                pixels[1] = self.to_color
+                pixels[2] = self.to_color
+                pixels[3] = self.to_color
+
+                pixels[0] = self.to_color
+
+                pixels[4] = self.from_color
+                pixels[5] = self.from_color
+                pixels[6] = self.from_color
+
+            elif self.state == 3:
+                pixels[1] = self.to_color
+                pixels[2] = self.to_color
+                pixels[3] = self.to_color
+
+                pixels[0] = self.to_color
+
+                pixels[4] = self.to_color
+                pixels[5] = self.to_color
+                pixels[6] = self.to_color
+
+                self.from_color, self.to_color = self.to_color, self.from_color
+
+        if need_update:
+            pixels.show()
 
 blinky = Blinky()
 
